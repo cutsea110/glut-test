@@ -1,0 +1,4 @@
+Build
+$ ghc -package GLUT glut-test.hs
+
+ref. http://www.f13g.com/
