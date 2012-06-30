@@ -1,7 +1,9 @@
 import Graphics.UI.GLUT
+import Graphics.Rendering.OpenGL.GLU
 
 import Data.IORef
 import System.Environment
+import System.Exit
 
 -- タイマの間隔
 timerInterval :: Timeout
@@ -14,6 +16,7 @@ main = do
   
   -- 回転の角度を初期化
   rot <- newIORef 0.0
+  arg <- newIORef 14.4
   
   -- GLUTの初期化
   initialize prog args
@@ -24,21 +27,25 @@ main = do
   createWindow "guruGuru"
   
   -- 表示に使うコールバック関数の指定
-  displayCallback $= display rot
+  displayCallback $= display rot arg
   
   -- ウィンドウのサイズが変更された時に呼ぶコールバック関数の指定
   reshapeCallback $= Just reshape
   
+  -- キーボードやマウスのコールバック
+  keyboardMouseCallback $= Just (keyboardProc arg)
+  
   -- タイマを作る
-  addTimerCallback timerInterval $ timerProc (display rot)
+  addTimerCallback timerInterval $ timerProc (display rot arg)
   
   -- GLUTのメインループに入る
   mainLoop
 
-display :: IORef GLdouble -> IO ()
-display rot = do
+display :: IORef GLdouble -> IORef GLdouble -> IO ()
+display rot arg = do
   -- 回転させる
-  modifyIORef rot (+14.4)
+  w <- readIORef arg
+  modifyIORef rot (+w)
   r <- readIORef rot
   
   -- 背景を黒にする
@@ -78,3 +85,10 @@ reshape size@(Size w h) = do
   -- 少し後ろから撮影
   lookAt (Vertex3 0.0 0.0 (-1.0)) (Vertex3 0.0 0.0 0.0) (Vector3 0.0 1.0 0.0)
   matrixMode $= Modelview 0
+
+-- キー入力の処理
+keyboardProc  :: Num a => IORef a -> Key -> KeyState -> t -> t1 -> IO ()
+keyboardProc arg ch state _ _
+  | ch == Char 'q' = exitWith ExitSuccess -- qが押されたら終了
+  | state == Down = modifyIORef arg (*(-1)) -- それ以外なら回転の方向を変える
+  | otherwise = return ()
